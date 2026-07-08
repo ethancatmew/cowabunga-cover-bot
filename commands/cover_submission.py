@@ -1,3 +1,4 @@
+import config
 import aiosqlite
 import time
 import math
@@ -10,8 +11,7 @@ from discord import app_commands, ui
 from discord.ext import commands, tasks
 
 def not_cover_banned(user: discord.Member) -> bool:
-        cover_banned_role = 1472156962081996892
-        return not any(role.id == cover_banned_role for role in user.roles)
+    return not any(role.id == config.roles["cover_banned"] for role in user.roles)
 
 class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
     def __init__(self, bot: commands.Bot, submitter_id: int, title_artist: str):
@@ -46,7 +46,7 @@ class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
             await interaction.response.send_message("**ERROR**:warning: Submitter has DMs disabled.", ephemeral = True)
 
         if len(self.note.value) > 0:
-            feedback_log_channel = self.bot.get_channel(1357438360167252008)
+            feedback_log_channel = self.bot.get_channel(config.channels["feedback_log"])
             if feedback_log_channel:
                 await feedback_log_channel.send(f"{reviewer.mention}: {self.note.value}")
         
@@ -92,7 +92,7 @@ class SubmissionButtons(ui.View):
 
     @ui.button(label = "Approve", style = discord.ButtonStyle.green, custom_id = "approve_btn")
     async def approve(self, interaction: discord.Interaction, button: ui.Button):
-        has_role = any(role.id == 1353545674335191122 for role in interaction.user.roles)
+        has_role = any(role.id == config.roles["developer"] for role in interaction.user.roles)
         if not has_role:
             return await interaction.response.send_message("**ERROR**:warning: You do not have permission to accept covers.", ephemeral = True)
 
@@ -110,21 +110,12 @@ class SubmissionButtons(ui.View):
         except discord.Forbidden:
             await interaction.response.send_message("Submitter has DMs disabled.", ephemeral = True)
 
-
-        try:
-            # attempt to upload the audio
-
-            
-
-            await interaction.message.delete()
-        except:
-            # audio failed to upload, for whatever reason. don't delete
-            await interaction.response.send_message("Audio failed to upload to ROBLOX", ephemeral = True)
+        await interaction.message.delete()
 
     
     @ui.button(label = "Edit", style = discord.ButtonStyle.secondary, custom_id = "edit_btn")
     async def edit(self, interaction: discord.Interaction, button: ui.Button):
-        has_role = any(role.id == 1353545674335191122 for role in interaction.user.roles)
+        has_role = any(role.id == config.roles["developer"] for role in interaction.user.roles)
         if not has_role:
             return await interaction.response.send_message("**ERROR**:warning: You do not have permission to edit covers.", ephemeral = True)
 
@@ -144,8 +135,7 @@ class CoverSubmissionModal(ui.Modal, title = "Cover Submission"):
     def __init__(self, bot: commands.Bot):
         super().__init__()
         self.bot = bot
-        self.submission_channel = 1470601268731969832
-        self.cooldown = 259200 # 259200
+        self.cooldown = 259200 # 259200s=3d
 
     LYRIC_PLACEHOLDER = '''
     Christmas, Christmas time is near\nTime for toys and time for cheer\n...
@@ -160,7 +150,7 @@ class CoverSubmissionModal(ui.Modal, title = "Cover Submission"):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True, thinking = True)
 
-        channel = self.bot.get_channel(self.submission_channel)
+        channel = self.bot.get_channel(config.channels["submissions"])
 
         BASE_STRING = "--!strict\n\nlocal ReplicatedStorage = game:GetService('ReplicatedStorage')\nlocal Types = require(ReplicatedStorage.Types)\n\nreturn {{\n\tTitle = \"{title}\",\n\tArtist = \"{artist}\",\n\tReleaseDate = {date},\n\tDuration = {duration},\n\tCoverBy = {userid},\n\tLyrics = {{\n{lyrics}\t}},\n\tSongId = 0,\n\tVolume = 0.5,\n\tTimePosition = 0\n}} :: Types.Song"
 
@@ -224,7 +214,7 @@ class CoverSubmissionModal(ui.Modal, title = "Cover Submission"):
             response = BASE_STRING.format(title = title, artist = artist, date = self.release_date.value, duration = duration, userid = self.roblox_userid.value, lyrics = lyrics)
             
             expiration = time.time() + self.cooldown
-            async with aiosqlite.connect("database.db") as database:
+            async with aiosqlite.connect(config.database) as database:
                 await database.execute(
                     "INSERT OR REPLACE INTO cooldowns (user_id, expiry_time) VALUES (?, ?)",
                     (interaction.user.id, expiration)
@@ -236,18 +226,17 @@ class CoverSubmissionModal(ui.Modal, title = "Cover Submission"):
         else:
             await interaction.followup.send(f'**ERROR**:warning: Submission failed. Please try again. If this keeps happening, create a bug report ticket.', ephemeral = True)
 
-class CoverSubmissionTrigger(ui.View):
+class CoverSubmissionButton(ui.View):
     def __init__(self, bot: commands.Bot):
         super().__init__(timeout=None)
         self.bot = bot
-        self.database = "database.db"
 
     @ui.button(label = "Submit a Cover", style = discord.ButtonStyle.primary, custom_id = "trigger_cover_modal", emoji = "🎤")
     async def trigger(self, interaction: discord.Interaction, button: ui.Button):
         if not not_cover_banned(interaction.user):
             return await interaction.response.send_message(":x: You are blacklisted from submitting covers.", ephemeral = True)
         
-        async with aiosqlite.connect(self.database) as database:
+        async with aiosqlite.connect(config.database) as database:
             async with database.execute("SELECT expiry_time FROM cooldowns WHERE user_id = ?", (interaction.user.id,)) as cursor:
                 row = await cursor.fetchone()
                 if row and time.time() < int(row[0]):
@@ -258,7 +247,6 @@ class CoverSubmissionTrigger(ui.View):
 class CoverSubmission(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.database = "database.db"
         self.cleanup.start()
 
     def cog_unload(self):
@@ -267,77 +255,11 @@ class CoverSubmission(commands.Cog):
 
     @tasks.loop(hours=24)
     async def cleanup(self):
-        async with aiosqlite.connect(self.database) as database:
+        async with aiosqlite.connect(config.database) as database:
             await database.execute("DELETE FROM cooldowns WHERE expiry_time < ?", (time.time(),))
             await database.commit()
-
-    @app_commands.command(name = "post_cover_button")
-    @app_commands.checks.has_any_role(1353545674335191122, 1471636534225801278)
-    async def post_button(self, interaction: discord.Interaction):
-        rules = ("""# Cover Submissions
-By submitting a cover, you allow the developers to use your submitted audio in any of their games. You may request to have your audio removed.
-If accepted, you will receive: a chat tag, a door, and a door effect as compensation. 
-
-## Tips
-1. Record your cover in a quiet space. We will not accept covers that have lots of feedback / background noise.
-2. Listen to the original song you are trying to cover before recording your own version. This will help you stay in pitch and on time.
-3. Keep your recordings between 12 and 35 seconds. Anything shorter or longer will fail to submit.
-4. Submit your raw vocals. We will not accept any cover with extra effects.
-5. Keep covers to English only. There will be very few exceptions for songs in other languages.
-6. Sing the chorus or the most popular part of the song. Start at the beginning of a verse.
-
-## FAQ
-- How long does it take for my cover to be reviewed?
-  - There is no exact time frame, it depends on how busy the developers are with other projects or personal life. We do have some volunteers who can decline covers more frequently but being accepted may take multiple weeks or longer.
-- What songs are currently in the game?
-  - [Click Here](<https://pastebin.com/rpYgpesT>)
-- Can we submit any songs?
-  - You are allowed to submit any song, however it may be declined if it is not popular enough, sung in any language other than English, or contains language against ROBLOX rules.
-
-## How will I know if I get accepted?
-To receive your result you must have your direct messages enabled for the server. You will receive a DM from the bot telling you whether or not your cover has been added to the game.
-If your cover is added, you should see the rewards in your inventory the next time you log in! If you do not see them, please go to <#1357424462093353060> with your UserId and song.
-
-:warning: Asking for your cover to be checked or complaining about response time will result in your cover being declined.""")
-        await interaction.channel.send(content=rules, view = CoverSubmissionTrigger(self.bot))
-        await interaction.response.send_message("Posted cover button!", ephemeral = True)
-
-    @post_button.error
-    async def post_button_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        if isinstance(error, app_commands.MissingAnyRole):
-            await interaction.response.send_message(":no_entry_sign: You must be a part of the Cowabunga Team to use this command.", ephemeral = True)
-
-    @app_commands.command(name = "clear_cooldown", description = "Clear cover submission cooldown for a specific user.")
-    @app_commands.checks.has_any_role(1353545674335191122, 1471636534225801278)
-    async def clear_cooldown(self, interaction: discord.Interaction, member: discord.Member):
-        async with aiosqlite.connect(self.database) as database:
-            await database.execute("DELETE FROM cooldowns WHERE user_id = ?", (member.id,))
-            await database.commit()
-        await interaction.response.send_message(f"Cleared cover submission cooldown for {member.mention}.", ephemeral = True)
-    
-    @clear_cooldown.error
-    async def clear_cooldown_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        if isinstance(error, app_commands.MissingAnyRole):
-            await interaction.response.send_message(":no_entry_sign: You must be a part of the Cowabunga Team to use this command.", ephemeral = True)
-
-    @app_commands.command(name = "post_covers_disabled")
-    @app_commands.checks.has_any_role(1353545674335191122, 1471636534225801278)
-    async def post_covers_disabled(self, interaction: discord.Interaction, reason: Optional[str]):
-        base_msg = "# Cover Submissions\nUnfortunately, you caught us at a bad time! We're currently not accepting any submissions. Check back occasionally to see if submissions are back up."
-
-        if reason is not None:
-            base_msg += f"\n\nThe following reason was provided by {interaction.user.mention}:\n```\n{reason}\n```"
-        
-        await interaction.channel.send(content=base_msg)
-        await interaction.response.send_message("Posted cover disabled message!", ephemeral = True)
-
-    @post_covers_disabled.error
-    async def post_covers_disabled_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        if isinstance(error, app_commands.MissingAnyRole):
-            await interaction.response.send_message(":no_entry_sign: You must be a part of the Cowabunga Team to use this command.", ephemeral = True)
-
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CoverSubmission(bot))
     bot.add_view(SubmissionButtons(bot))
-    bot.add_view(CoverSubmissionTrigger(bot))
+    bot.add_view(CoverSubmissionButton(bot))

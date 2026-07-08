@@ -33,5 +33,9 @@ async def on_ready():
     await bot.change_presence(status=discord.Status.online, activity=discord.Game(name="Join our group!"))
     print(f'{bot.user} is now online, synced {len(synced)} commands.')
 
+@bot.event
+async def on_app_command_error(interaction, error):
+    print(repr(error))
+
 ##==- Load Bot -==##
 bot.run(os.getenv("DISCORD_BOT"))
