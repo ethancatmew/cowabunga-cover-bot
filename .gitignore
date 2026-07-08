@@ -5,6 +5,9 @@
 # SQL Database
 *.db
 
+# Songs JSON
+*.json
+
 # Python
 __pycache__/
 *.pyc
