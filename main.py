@@ -1,3 +1,4 @@
+import config
 from dotenv import load_dotenv
 import os
 import discord
@@ -15,7 +16,7 @@ async def load_cogs():
     print('Cogs loaded')
 
 async def load_database():
-    async with aiosqlite.connect("database.db") as database:
+    async with aiosqlite.connect(config.database) as database:
         await database.execute("""
             CREATE TABLE IF NOT EXISTS cooldowns (
                 user_id INTEGER PRIMARY KEY,
