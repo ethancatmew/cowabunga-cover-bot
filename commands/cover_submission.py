@@ -61,10 +61,10 @@ class EditModal(ui.Modal, title="Edit Submission"):
         self.code = code
 
         self.edit = ui.TextInput(
-            label="Module Code",
-            required=True,
-            style=discord.TextStyle.paragraph,
-            default=code
+            label = "Module Code",
+            required = True,
+            style = discord.TextStyle.paragraph,
+            default = code
         )
 
         self.add_item(self.edit)
