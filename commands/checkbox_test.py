@@ -1,9 +1,22 @@
 import config
 import discord
+from typing import TypedDict, Optional
 from discord import ui, app_commands
 from discord.ext import commands
 
-class SongInformationModal(ui.Modal, title="Song Information"):
+class PartialSongSubmissionType(TypedDict):
+    song_title: str
+    song_artist: str
+    release_year: int
+    genre: list[str]
+
+class SongSubmissionType(PartialSongSubmissionType):
+    roblox_userid: int
+    lyrics: str
+    audio: discord.Attachment
+
+
+class SongInformationModal(ui.Modal, title = "Song Information"):
     song_title = ui.TextInput(
         label = "Song Title",
         required = True,
@@ -55,14 +68,14 @@ class SongInformationModal(ui.Modal, title="Song Information"):
         song_data = {
             "song_title": self.song_title.value,
             "song_artist": self.song_artist.value,
-            "release_year": self.release_year.value,
+            "release_year": int(self.release_year.value),
             "genre": self.genre.component.values
         }
 
         await interaction.response.send_message(
             "Click **Next** to submit the audio information.",
             ephemeral = True,
-            view = ContinueView(song_data)
+            view = ContinueView(song_data, interaction)
         )
 
 class StartSubmissionView(ui.View):
@@ -74,15 +87,16 @@ class StartSubmissionView(ui.View):
         await interaction.response.send_modal(SongInformationModal())
 
 class ContinueView(ui.View):
-    def __init__(self, song_data: dict):
+    def __init__(self, song_data: PartialSongSubmissionType, interaction: discord.Interaction):
         super().__init__(timeout=300)
         self.song_data = song_data
+        self.original_interaction = interaction
 
     @ui.button(label="Next", style=discord.ButtonStyle.primary, emoji="➡️")
     async def continue_button(self, interaction: discord.Interaction, button: ui.Button):
-        await interaction.response.send_modal(AudioSubmissionModal(self.song_data))
+        await interaction.response.send_modal(AudioSubmissionModal(self))
 
-class AudioSubmissionModal(ui.Modal, title="Audio Submission"):
+class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
     roblox_userid = ui.TextInput(
         label = "Roblox UserId",
         required = True,
@@ -103,30 +117,28 @@ class AudioSubmissionModal(ui.Modal, title="Audio Submission"):
         )
     )
 
-    def __init__(self, song_data: dict):
+    def __init__(self, continue_view: ContinueView):
         super().__init__()
-        self.song_data = song_data
+        self.continue_view = continue_view
 
     async def on_submit(self, interaction: discord.Interaction):
         attachment: discord.Attachment = self.audio.component.values[0]
 
-        data = {
-            **self.song_data,
-            "roblox_userid": self.roblox_userid.value,
+        data: SongSubmissionType = {
+            **self.continue_view.song_data,
+            "roblox_userid": int(self.roblox_userid.value),
             "lyrics": self.lyrics.value,
             "audio": attachment
         }
 
-        await interaction.response.send_message(
-            "Submission received!\n\n"
-            f"**Song:** {data['song_title']}\n"
-            f"**Artist:** {data['song_artist']}\n"
-            f"**Release Year:** {data['release_year']}\n"
-            f"**Genre:** {', '.join(data['genre'])}\n"
-            f"**Roblox UserId:** {data['roblox_userid']}\n"
-            f"**Audio:** {data['audio'].filename}",
-            ephemeral=True
-        )
+        await interaction.response.defer(ephemeral = True)
+        await self.continue_view.original_interaction.delete_original_response()
+        success = await check_data(data)
+
+        if success == True:
+            await interaction.followup.send("Submission received!", ephemeral = True)
+        else:
+            await interaction.followup.send("Submission failed. Please try again later.", ephemeral = True)
 
 class CheckboxTest(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -138,6 +150,9 @@ class CheckboxTest(commands.Cog):
             config.cover_rules,
             view=StartSubmissionView()
         )
+
+async def check_data(data: SongSubmissionType):
+    return False
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CheckboxTest(bot))
