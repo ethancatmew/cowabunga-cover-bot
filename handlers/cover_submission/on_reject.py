@@ -23,6 +23,8 @@ class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
 
         if not submitter:
             await interaction.response.send_message("Cannot find the submitter.")
+            await interaction.message.delete()
+            return
 
         # TODO: make it so it says the song name vv
         BASE_DECLINED = f"We appreciate your submission of **{None}** to the game. This time, we couldn't accept it."
@@ -35,19 +37,18 @@ class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
             msg += f'\n\n{BASE_REASONS}'
 
         try:
-            submitter.send(msg)
+            await submitter.send(msg)
             await interaction.response.send_message("Feedback submitted.", ephemeral = True)
         except discord.Forbidden:
             await interaction.response.send_message("**ERROR**:warning: Submitter has DMs disabled.", ephemeral = True)
 
-        if len(self.feedback.value > 0):
+        if len(self.feedback.value) > 0:
             feedback_log_channel = self.bot.get_channel(config.channels["feedback_log"])
             if feedback_log_channel:
-                await feedback_log_channel.send(f"{reviewer.mention}: {self.note.value}")
+                await feedback_log_channel.send(f"{reviewer.mention}: {self.feedback.value}")
 
         await interaction.message.delete()
 
-
-def reject(bot: commands.Bot, interaction: discord.Interaction):
+async def reject(bot: commands.Bot, interaction: discord.Interaction):
     submitter_id = int(interaction.message.content)
 
