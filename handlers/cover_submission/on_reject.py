@@ -49,6 +49,6 @@ class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
 
         await interaction.message.delete()
 
-async def reject(bot: commands.Bot, interaction: discord.Interaction):
+async def reject(bot: commands.Bot, interaction: discord.Interaction, title_artist: str):
     submitter_id = int(interaction.message.content)
-
+    await interaction.response.send_modal(FeedbackModal(bot, submitter_id, title_artist))
