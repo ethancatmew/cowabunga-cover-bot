@@ -21,5 +21,5 @@ class ThreadDevResponse(commands.Cog):
 
         await message.channel.edit(applied_tags=[*message.channel.applied_tags, tag])
 
-    async def setup(bot: commands.Bot):
-        await bot.add_cog(ThreadDevResponse(bot))
+async def setup(bot: commands.Bot):
+    await bot.add_cog(ThreadDevResponse(bot))
