@@ -13,7 +13,7 @@ async def load_cogs():
     for folder in ('commands', 'listeners'):
         for filename in os.listdir(f'./{folder}'):
             if filename.endswith('.py'):
-                await bot.load_extension(f'commands.{filename[:-3]}')
+                await bot.load_extension(f'{folder}.{filename[:-3]}')
     print('Cogs loaded')
 
 async def load_database():
