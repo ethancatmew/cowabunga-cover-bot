@@ -10,9 +10,10 @@ bot = commands.Bot(command_prefix = '$', intents = discord.Intents.all())
 load_dotenv()
 
 async def load_cogs():
-    for filename in os.listdir('./commands'):
-        if filename.endswith('.py'):
-            await bot.load_extension(f'commands.{filename[:-3]}')
+    for folder in ('commands', 'listeners'):
+        for filename in os.listdir(f'./{folder}'):
+            if filename.endswith('.py'):
+                await bot.load_extension(f'commands.{filename[:-3]}')
     print('Cogs loaded')
 
 async def load_database():
