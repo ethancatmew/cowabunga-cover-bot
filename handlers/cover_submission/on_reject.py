@@ -88,4 +88,4 @@ async def reject(bot: commands.Bot, interaction: discord.Interaction, title_arti
         await interaction.response.send_message("**ERROR**:warning: Could not determine the submitter.", ephemeral = True)
         return
 
-    await interaction.response.send_modal(FeedbackModal(bot, submitter_id, title_artist, interaction.message))
+    await interaction.response.send_modal(FeedbackModal(bot, submitter_id, title_artist))

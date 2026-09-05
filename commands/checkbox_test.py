@@ -7,16 +7,16 @@ from typing import TypedDict, Optional
 from discord import ui, app_commands
 from discord.ext import commands
 
-from handlers.cover_submission import on_accept
+from handlers.cover_submission import on_accept, on_edit, on_reject
 
 class PartialSongSubmissionType(TypedDict):
-    song_title: str
-    song_artist: str
+    title: str
+    artist: str
     release_year: int
     genre: list[str]
 
 class SongSubmissionType(PartialSongSubmissionType):
-    roblox_userid: int
+    userid: int
     lyrics: str
     audio: discord.Attachment
     duration: int
@@ -79,8 +79,8 @@ class SongInformationModal(ui.Modal, title = "Song Information"):
             return await interaction.followup.send("**ERROR**:warning: Must submit a number for your release year.", ephemeral = True)
 
         song_data = {
-            "song_title": self.song_title.value,
-            "song_artist": self.song_artist.value,
+            "title": self.song_title.value,
+            "artist": self.song_artist.value,
             "release_year": int(self.release_year.value),
             "genre": self.genre.component.values
         }
@@ -101,13 +101,22 @@ class StartSubmissionView(ui.View):
         await interaction.response.send_modal(SongInformationModal(self.bot))
 
 class SubmissionButtons(ui.View):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot, title_artist: str):
         super().__init__(timeout=None)
         self.bot = bot
+        self.title_artist = title_artist
 
     @ui.button(label = "Approve", style = discord.ButtonStyle.green, custom_id = "approve")
     async def approve(self, interaction: discord.Interaction, button: ui.Button):
-        return await on_accept(self.bot, interaction, "test")
+        return await on_accept.approve(self.bot, interaction, self.title_artist)
+
+    @ui.button(label = "Edit", style = discord.ButtonStyle.grey, custom_id = "edit")
+    async def edit(self, interaction: discord.Interaction, button: ui.Button):
+        return await on_edit.edit(self.bot, interaction)
+
+    @ui.button(label = "Reject", style = discord.ButtonStyle.red, custom_id = "reject")
+    async def reject(self, interaction: discord.Interaction, button: ui.Button):
+        return await on_reject.reject(self.bot, interaction, self.title_artist)
 
 
 class ContinueView(ui.View):
@@ -199,14 +208,13 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
 
         data: SongSubmissionType = {
             **self.continue_view.song_data,
-            "roblox_userid": int(self.roblox_userid.value),
+            "userid": int(self.roblox_userid.value),
             "lyrics": safe_lyrics,
             "audio": attachment,
             "duration": duration
         }
 
-        await channel.send(content = interaction.user.id)
-
+        await channel.send(content = interaction.user.id, view = SubmissionButtons(self.bot, f'{self.continue_view.song_data["title"]} - {self.continue_view.song_data["artist"]}'))
         await self.continue_view.original_interaction.delete_original_response()
         await interaction.followup.send("Submission received!", ephemeral = True)
 
