@@ -68,7 +68,7 @@ class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
         if feedback:
             feedback_log_channel = self.bot.get_channel(config.channels["feedback_log"])
             if feedback_log_channel:
-                log_message = f"{reviewer.mention}: {feedback}"
+                log_message = f"{reviewer.mention} to {submitter.mention}: {feedback}"
                 if len(log_message) > 2000:
                     log_message = log_message[:1997] + "..."
                 try:
