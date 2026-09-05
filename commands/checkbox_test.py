@@ -7,6 +7,8 @@ from typing import TypedDict, Optional
 from discord import ui, app_commands
 from discord.ext import commands
 
+from handlers.cover_submission import on_accept
+
 class PartialSongSubmissionType(TypedDict):
     song_title: str
     song_artist: str
@@ -21,6 +23,10 @@ class SongSubmissionType(PartialSongSubmissionType):
 
 
 class SongInformationModal(ui.Modal, title = "Song Information"):
+    def __init__(self, bot: commands.Bot):
+        super().__init__(timeout=None)
+        self.bot = bot
+
     song_title = ui.TextInput(
         label = "Song Title",
         required = True,
@@ -82,28 +88,45 @@ class SongInformationModal(ui.Modal, title = "Song Information"):
         await interaction.response.send_message(
             "Click **Next** to submit the audio information.",
             ephemeral = True,
-            view = ContinueView(song_data, interaction)
+            view = ContinueView(self.bot, song_data, interaction)
         )
 
 class StartSubmissionView(ui.View):
-    def __init__(self):
+    def __init__(self, bot: commands.Bot):
         super().__init__(timeout=None)
+        self.bot = bot
 
     @ui.button(label = "Submit Song", style = discord.ButtonStyle.primary, emoji = "🎵", custom_id = "submit_song")
     async def submit_song(self, interaction: discord.Interaction, button: ui.Button):
-        await interaction.response.send_modal(SongInformationModal())
+        await interaction.response.send_modal(SongInformationModal(self.bot))
+
+class SubmissionButtons(ui.View):
+    def __init__(self, bot: commands.Bot):
+        super().__init__(timeout=None)
+        self.bot = bot
+
+    @ui.button(label = "Approve", style = discord.ButtonStyle.green, custom_id = "approve")
+    async def approve(self, interaction: discord.Interaction, button: ui.Button):
+        return await on_accept(self.bot, interaction, "test")
+
 
 class ContinueView(ui.View):
-    def __init__(self, song_data: PartialSongSubmissionType, interaction: discord.Interaction):
+    def __init__(self, bot: commands.Bot, song_data: PartialSongSubmissionType, interaction: discord.Interaction):
         super().__init__(timeout=300)
+        self.bot = bot
         self.song_data = song_data
         self.original_interaction = interaction
 
     @ui.button(label="Next", style=discord.ButtonStyle.primary, emoji="➡️")
     async def continue_button(self, interaction: discord.Interaction, button: ui.Button):
-        await interaction.response.send_modal(AudioSubmissionModal(self))
+        await interaction.response.send_modal(AudioSubmissionModal(self.bot, self))
 
 class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
+    def __init__(self, bot: commands.Bot, continue_view: ContinueView):
+        super().__init__()
+        self.bot = bot
+        self.continue_view = continue_view
+
     roblox_userid = ui.TextInput(
         label = "Roblox UserId",
         required = True,
@@ -124,12 +147,12 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
         )
     )
 
-    def __init__(self, continue_view: ContinueView):
-        super().__init__()
-        self.continue_view = continue_view
-
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral = True)
+
+        channel = self.bot.get_channel(config.channels["submissions"])
+        if not channel:
+            await interaction.followup.send(f'**ERROR**:warning: Submission failed. Please try again. If this keeps happening, create a bug report ticket.', ephemeral = True)
 
         attachment: discord.Attachment = self.audio.component.values[0]
 
@@ -182,6 +205,8 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
             "duration": duration
         }
 
+        await channel.send(content = interaction.user.id)
+
         await self.continue_view.original_interaction.delete_original_response()
         await interaction.followup.send("Submission received!", ephemeral = True)
 
@@ -193,7 +218,7 @@ class CheckboxTest(commands.Cog):
     async def setup_submission(self, interaction: discord.Interaction):
         await interaction.response.send_message(
             config.cover_rules,
-            view = StartSubmissionView()
+            view = StartSubmissionView(self.bot)
         )
 
 async def setup(bot: commands.Bot):
