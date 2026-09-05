@@ -16,7 +16,7 @@ class ThreadDevResponse(commands.Cog):
             return
 
         tag = discord.utils.get(message.channel.parent.available_tags, name = "Developer Response")
-        if not tag:
+        if not tag or tag in message.channel.applied_tags:
             return
 
         await message.channel.edit(applied_tags=[*message.channel.applied_tags, tag])
