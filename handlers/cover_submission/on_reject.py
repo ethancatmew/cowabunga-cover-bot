@@ -4,10 +4,11 @@ from discord import ui
 from discord.ext import commands
 
 class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
-    def __init__(self, bot: commands.Bot, submitter_id: int):
+    def __init__(self, bot: commands.Bot, submitter_id: int, title_artist: str):
         super().__init__()
         self.bot = bot
         self.submitter_id = submitter_id
+        self.title_artist = title_artist
 
 
     feedback = ui.TextInput(
@@ -19,36 +20,72 @@ class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
 
     async def on_submit(self, interaction: discord.Interaction):
         reviewer = interaction.user
-        submitter = await self.bot.fetch_user(self.submitter_id)
+        feedback = self.feedback.value.strip()
 
-        if not submitter:
-            await interaction.response.send_message("Cannot find the submitter.")
-            await interaction.message.delete()
+        try:
+            submitter = await self.bot.fetch_user(self.submitter_id)
+        except discord.NotFound:
+            await interaction.response.send_message("Cannot find the submitter.", ephemeral = True)
+            return
+        except discord.HTTPException:
+            await interaction.response.send_message("Could not retrieve the submitter. Please try again.", ephemeral = True)
             return
 
-        # TODO: make it so it says the song name vv
-        BASE_DECLINED = f"We appreciate your submission of **{None}** to the game. This time, we couldn't accept it."
-        BASE_REASONS = "**Please make sure your cover has all of the following:**\n> Clear and audible vocals\n> Correct melody\n> Correct lyrics\n> No background noise\n> No added voice effects\n> Is NOT on [this list](https://pastebin.com/rpYgpesT)"
+        BASE_DECLINED = (
+            f"We appreciate your submission of **{self.title_artist}** to the game. "
+            "This time, we couldn't accept it."
+        )
+        BASE_REASONS = (
+            "**Please make sure your cover has all of the following:**\n"
+            "> Clear and audible vocals\n"
+            "> Correct melody\n"
+            "> Correct lyrics\n"
+            "> No background noise\n"
+            "> No added voice effects\n"
+            "> Is NOT on [this list](https://pastebin.com/rpYgpesT)"
+        )
 
         msg = BASE_DECLINED
-        if len(self.feedback.value) > 0:
-            msg += f'\n\nThe following feedback was left by the person who reviewed your cover:\n```{self.feedback.value}\n```'
+        if feedback:
+            safe_feedback = feedback.replace("```", "'''")
+            msg += f'\n\nThe following feedback was left by the person who reviewed your cover:\n```text\n{safe_feedback}\n```'
         else:
             msg += f'\n\n{BASE_REASONS}'
+
+        if len(msg) > 2000:
+            msg = msg[:1997] + "..."
 
         try:
             await submitter.send(msg)
             await interaction.response.send_message("Feedback submitted.", ephemeral = True)
         except discord.Forbidden:
             await interaction.response.send_message("**ERROR**:warning: Submitter has DMs disabled.", ephemeral = True)
+            return
+        except discord.HTTPException:
+            await interaction.response.send_message("**ERROR**:warning: Could not send the rejection message.", ephemeral = True)
+            return
 
-        if len(self.feedback.value) > 0:
+        if feedback:
             feedback_log_channel = self.bot.get_channel(config.channels["feedback_log"])
             if feedback_log_channel:
-                await feedback_log_channel.send(f"{reviewer.mention}: {self.feedback.value}")
+                log_message = f"{reviewer.mention}: {feedback}"
+                if len(log_message) > 2000:
+                    log_message = log_message[:1997] + "..."
+                try:
+                    await feedback_log_channel.send(log_message)
+                except (discord.Forbidden, discord.HTTPException):
+                    pass
 
-        await interaction.message.delete()
+        try:
+            await interaction.message.delete()
+        except (discord.NotFound, discord.Forbidden):
+            pass
 
 async def reject(bot: commands.Bot, interaction: discord.Interaction, title_artist: str):
-    submitter_id = int(interaction.message.content)
-    await interaction.response.send_modal(FeedbackModal(bot, submitter_id, title_artist))
+    try:
+        submitter_id = int(interaction.message.content)
+    except (AttributeError, ValueError):
+        await interaction.response.send_message("**ERROR**:warning: Could not determine the submitter.", ephemeral = True)
+        return
+
+    await interaction.response.send_modal(FeedbackModal(bot, submitter_id, title_artist, interaction.message))
