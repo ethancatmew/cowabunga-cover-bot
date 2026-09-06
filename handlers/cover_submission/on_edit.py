@@ -18,7 +18,6 @@ class EditModal(ui.Modal, title = "Edit Submission"):
             style = discord.TextStyle.paragraph,
             default = self.code
         )
-
         self.add_item(self.edit)
 
     async def on_submit(self, interaction: discord.Interaction):

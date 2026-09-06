@@ -10,7 +10,6 @@ class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
         self.submitter_id = submitter_id
         self.title_artist = title_artist
 
-
     feedback = ui.TextInput(
         label = "Enter Feedback",
         placeholder = "Optional feedback...",
