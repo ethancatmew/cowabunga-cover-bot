@@ -82,10 +82,5 @@ class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
             pass
 
 async def reject(bot: commands.Bot, interaction: discord.Interaction, title_artist: str):
-    try:
-        submitter_id = int(interaction.message.content)
-    except (AttributeError, ValueError):
-        await interaction.response.send_message("**ERROR**:warning: Could not determine the submitter.", ephemeral = True)
-        return
-
+    submitter_id = int(interaction.message.content.splitlines()[0])
     await interaction.response.send_modal(FeedbackModal(bot, submitter_id, title_artist))

@@ -25,7 +25,7 @@ class SongSubmissionType(PartialSongSubmissionType):
 
 class SongInformationModal(ui.Modal, title = "Song Information"):
     def __init__(self, bot: commands.Bot):
-        super().__init__(timeout=None)
+        super().__init__(timeout = None)
         self.bot = bot
 
     song_title = ui.TextInput(
@@ -56,20 +56,20 @@ class SongInformationModal(ui.Modal, title = "Song Information"):
             options = [
                 discord.CheckboxGroupOption(
                     label = "Pop",
-                    value = "pop",
+                    value = "Pop",
                 ),
                 discord.CheckboxGroupOption(
                     label = "Classic",
-                    value = "classic",
+                    value = "Classic",
                     description = "Songs from the 2000s or prior"
                 ),
                 discord.CheckboxGroupOption(
                     label = "Rock",
-                    value = "rock"
+                    value = "Rock"
                 ),
                 discord.CheckboxGroupOption(
                     label = "Country",
-                    value = "country"
+                    value = "Country"
                 )
             ]
         )
@@ -94,7 +94,7 @@ class SongInformationModal(ui.Modal, title = "Song Information"):
 
 class StartSubmissionView(ui.View):
     def __init__(self, bot: commands.Bot):
-        super().__init__(timeout=None)
+        super().__init__(timeout = None)
         self.bot = bot
 
     @ui.button(label = "Submit Song", style = discord.ButtonStyle.primary, emoji = "🎵", custom_id = "submit_song")
@@ -103,10 +103,10 @@ class StartSubmissionView(ui.View):
 
 class SubmissionButtons(ui.View):
     def __init__(self, bot: commands.Bot):
-        super().__init__(timeout=None)
+        super().__init__(timeout = None)
         self.bot = bot
 
-    async def get_title_artist(self, message: discord.Message):
+    def get_title_artist(self, message: discord.Message):
         content = message.content
         code = re.search(r"```lua\s*(.*?)```", content, re.DOTALL).group(1)
         title = re.search(r'Title\s*=\s*"([^"]*)"', code).group(1)
@@ -128,12 +128,12 @@ class SubmissionButtons(ui.View):
 
 class ContinueView(ui.View):
     def __init__(self, bot: commands.Bot, song_data: PartialSongSubmissionType, interaction: discord.Interaction):
-        super().__init__(timeout=300)
+        super().__init__(timeout = 300)
         self.bot = bot
         self.song_data = song_data
         self.original_interaction = interaction
 
-    @ui.button(label="Next", style=discord.ButtonStyle.primary, emoji="➡️")
+    @ui.button(label = "Next", style = discord.ButtonStyle.primary, emoji = "➡️")
     async def continue_button(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(AudioSubmissionModal(self.bot, self))
 
@@ -221,8 +221,25 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
             "duration": duration
         }
 
-        title_artist = f'{self.continue_view.song_data["title"]} - {self.continue_view.song_data["artist"]}'
-        await channel.send(content = interaction.user.id, view = SubmissionButtons(self.bot, title_artist))
+        genres = ", ".join(f'"{genre}"' for genre in data["genre"])
+        lua_str = (
+            "```lua\n"
+            "return {\n"
+            f'\tTitle = "{data["title"]}",\n'
+            f'\tArtist = "{data["artist"]}",\n'
+            f'\tReleaseDate = {data["release_year"]},\n'
+            f'\tGenres = {{{genres}}},\n'
+            f'\tDuration = {data["duration"]},\n'
+            f'\tCoverBy = {data["userid"]},\n'
+            f'\tLyrics = {{\n{data["lyrics"]}\t}},\n'
+            f'\tSongId = 0,\n'
+            f'\tVolume = 0.5,\n'
+            f'\tTimePosition = 0,\n'
+            "}\n"
+            "```"
+        )
+
+        await channel.send(content = f"{interaction.user.id}\n{lua_str}", view = SubmissionButtons(self.bot))
         await self.continue_view.original_interaction.delete_original_response()
         await interaction.followup.send("Submission received!", ephemeral = True)
 

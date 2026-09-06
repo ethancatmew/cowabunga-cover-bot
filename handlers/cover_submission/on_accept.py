@@ -7,11 +7,7 @@ async def approve(bot: commands.Bot, interaction: discord.Interaction, title_art
     if not has_role:
         return await interaction.response.send_message("**ERROR**:warning: You do not have permission to accept covers.", ephemeral = True)
 
-    submitter_id = interaction.message.content
-
-    if not submitter_id:
-        return await interaction.response.send_message("**ERROR**:warning: Failed to find submitter id.", ephemeral = True)
-
+    submitter_id = int(interaction.message.content.splitlines()[0])
     user = await bot.fetch_user(submitter_id)
     if not user:
         await interaction.response.send_message("**ERROR**:warning: Failed to find user.", ephemeral = True)
