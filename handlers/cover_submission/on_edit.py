@@ -1,3 +1,4 @@
+import config
 import discord
 from discord import ui
 from discord.ext import commands
@@ -24,5 +25,9 @@ class EditModal(ui.Modal, title = "Edit Submission"):
         await interaction.response.edit_message(content = f"{self.top}\n{self.edit.value}")
 
 async def edit(bot: commands.Bot, interaction: discord.Interaction):
+    has_role = any(role.id in {config.roles["developer"], config.roles["dev_test"]} for role in interaction.user.roles)
+    if not has_role:
+        return await interaction.response.send_message("**ERROR**:warning: You do not have permission to edit covers.", ephemeral = True)
+
     source = interaction.message.content
     await interaction.response.send_modal(EditModal(bot, source))

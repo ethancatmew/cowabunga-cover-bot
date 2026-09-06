@@ -82,5 +82,9 @@ class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
             pass
 
 async def reject(bot: commands.Bot, interaction: discord.Interaction, title_artist: str):
+    has_role = any(role.id in {config.roles["developer"], config.roles["dev_test"], config.roles["cover_reviewer"]} for role in interaction.user.roles)
+    if not has_role:
+        return await interaction.response.send_message("**ERROR**:warning: You do not have permission to deny covers.", ephemeral = True)
+
     submitter_id = int(interaction.message.content.splitlines()[0])
     await interaction.response.send_modal(FeedbackModal(bot, submitter_id, title_artist))

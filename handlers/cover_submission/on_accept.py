@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 
 async def approve(bot: commands.Bot, interaction: discord.Interaction, title_artist: str):
-    has_role = any(role.id in {config.roles["developer"], config.roles["dev_test"], config.roles["cover_reviewer"]} for role in interaction.user.roles)
+    has_role = any(role.id in {config.roles["developer"], config.roles["dev_test"]} for role in interaction.user.roles)
     if not has_role:
         return await interaction.response.send_message("**ERROR**:warning: You do not have permission to accept covers.", ephemeral = True)
 
