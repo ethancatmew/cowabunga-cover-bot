@@ -106,7 +106,7 @@ class SubmissionButtons(ui.View):
         super().__init__(timeout=None)
         self.bot = bot
 
-    def get_title_artist(self, message: discord.Message):
+    async def get_title_artist(self, message: discord.Message):
         content = message.content
         code = re.search(r"```lua\s*(.*?)```", content, re.DOTALL).group(1)
         title = re.search(r'Title\s*=\s*"([^"]*)"', code).group(1)
@@ -239,5 +239,5 @@ class CheckboxTest(commands.Cog):
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CheckboxTest(bot))
-    await bot.add_view(StartSubmissionView(bot))
-    await bot.add_view(SubmissionButtons(bot))
+    bot.add_view(StartSubmissionView(bot))
+    bot.add_view(SubmissionButtons(bot))
