@@ -3,6 +3,7 @@ import discord
 import mutagen
 import math
 import io
+import re
 from typing import TypedDict, Optional
 from discord import ui, app_commands
 from discord.ext import commands
@@ -101,14 +102,20 @@ class StartSubmissionView(ui.View):
         await interaction.response.send_modal(SongInformationModal(self.bot))
 
 class SubmissionButtons(ui.View):
-    def __init__(self, bot: commands.Bot, title_artist: str):
+    def __init__(self, bot: commands.Bot):
         super().__init__(timeout=None)
         self.bot = bot
-        self.title_artist = title_artist
+
+    def get_title_artist(self, message: discord.Message):
+        content = message.content
+        code = re.search(r"```lua\s*(.*?)```", content, re.DOTALL).group(1)
+        title = re.search(r'Title\s*=\s*"([^"]*)"', code).group(1)
+        artist = re.search(r'Artist\s*=\s*"([^"]*)"', code).group(1)
+        return f'{title} - {artist}'
 
     @ui.button(label = "Approve", style = discord.ButtonStyle.green, custom_id = "approve")
     async def approve(self, interaction: discord.Interaction, button: ui.Button):
-        return await on_accept.approve(self.bot, interaction, self.title_artist)
+        return await on_accept.approve(self.bot, interaction, self.get_title_artist(interaction.message))
 
     @ui.button(label = "Edit", style = discord.ButtonStyle.grey, custom_id = "edit")
     async def edit(self, interaction: discord.Interaction, button: ui.Button):
@@ -116,7 +123,7 @@ class SubmissionButtons(ui.View):
 
     @ui.button(label = "Reject", style = discord.ButtonStyle.red, custom_id = "reject")
     async def reject(self, interaction: discord.Interaction, button: ui.Button):
-        return await on_reject.reject(self.bot, interaction, self.title_artist)
+        return await on_reject.reject(self.bot, interaction, self.get_title_artist(interaction.message))
 
 
 class ContinueView(ui.View):
@@ -214,7 +221,8 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
             "duration": duration
         }
 
-        await channel.send(content = interaction.user.id, view = SubmissionButtons(self.bot, f'{self.continue_view.song_data["title"]} - {self.continue_view.song_data["artist"]}'))
+        title_artist = f'{self.continue_view.song_data["title"]} - {self.continue_view.song_data["artist"]}'
+        await channel.send(content = interaction.user.id, view = SubmissionButtons(self.bot, title_artist))
         await self.continue_view.original_interaction.delete_original_response()
         await interaction.followup.send("Submission received!", ephemeral = True)
 
@@ -231,3 +239,5 @@ class CheckboxTest(commands.Cog):
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CheckboxTest(bot))
+    await bot.add_view(StartSubmissionView(bot))
+    await bot.add_view(SubmissionButtons(bot))
