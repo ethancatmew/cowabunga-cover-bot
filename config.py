@@ -1,13 +1,13 @@
 roles = {
     "developer": 1353545674335191122,
-    "dev_test": 1471636534225801278,
+    "dev_test": 1536559508698955876,
     "cover_reviewer": 1512489629784477940,
     "cover_banned": 1472156962081996892
 }
 
 channels = {
-    "submissions": 1470601268731969832,
-    "feedback_log": 1357438360167252008
+    "submissions": 1544552102989402122,
+    "feedback_log": 1544552102989402122
 }
 
 database = "database.db"
