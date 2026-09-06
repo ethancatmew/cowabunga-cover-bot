@@ -11,11 +11,14 @@ class EditModal(ui.Modal, title = "Edit Submission"):
         self.top = top
         self.code = code
 
-    edit = ui.TextInput(
-        label = "Module Code",
-        required = True,
-        style = discord.TextStyle.paragraph
-    )
+        self.edit = ui.TextInput(
+            label = "Module Code",
+            required = True,
+            style = discord.TextStyle.paragraph,
+            default = self.code
+        )
+
+        self.add_item(self.edit)
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.edit_message(content = f"{self.top}\n{self.edit.value}")
