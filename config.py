@@ -12,6 +12,8 @@ channels = {
 
 database = "database.db"
 
+cooldown = 259200
+
 cover_rules = """
 # Cover Submissions
 By submitting a cover, you allow the developers to use your submitted audio in any of their games. You may request to have your audio removed.
