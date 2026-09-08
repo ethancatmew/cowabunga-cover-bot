@@ -4,9 +4,11 @@ import mutagen
 import math
 import io
 import re
+import time
+import aiosqlite
 from typing import TypedDict, Optional
 from discord import ui, app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from handlers.cover_submission import on_accept, on_edit, on_reject
 
@@ -99,6 +101,16 @@ class StartSubmissionView(ui.View):
 
     @ui.button(label = "Submit Song", style = discord.ButtonStyle.primary, emoji = "🎵", custom_id = "submit_song")
     async def submit_song(self, interaction: discord.Interaction, button: ui.Button):
+        is_cover_banned = any(role.id == config.roles["cover_banned"] for role in interaction.user.roles)
+        if is_cover_banned:
+            return await interaction.response.send_message(":x: You are blacklisted from submitting covers.", ephemeral = True)
+
+        async with aiosqlite.connect(config.database) as database:
+            async with database.execute("SELECT expiry_time FROM cooldowns WHERE user_id = ?", (interaction.user.id,)) as cursor:
+                row = await cursor.fetchone()
+                if row and time.time() < int(row[0]):
+                    return await interaction.response.send_message(f":hourglass: You are on cooldown. You can submit again <t:{int(row[0])}:R>", ephemeral = True)
+
         await interaction.response.send_modal(SongInformationModal(self.bot))
 
 class SubmissionButtons(ui.View):
@@ -239,6 +251,14 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
             "```"
         )
 
+        expiration = time.time() + self.cooldown
+        async with aiosqlite.connect(config.database) as database:
+            await database.execute(
+                "INSERT OR REPLACE INTO cooldowns (user_id, expiry_time) VALUES (?, ?)",
+                (interaction.user.id, expiration)
+            )
+            await database.commit()
+
         await channel.send(content = f"{interaction.user.id}\n{lua_str}", view = SubmissionButtons(self.bot))
         await self.continue_view.original_interaction.delete_original_response()
         await interaction.followup.send("Submission received!", ephemeral = True)
@@ -246,6 +266,17 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
 class CheckboxTest(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.cleanup.start()
+
+    def cog_unload(self):
+        self.cleanup.cancel()
+        return super().cog_unload()
+
+    @tasks.loop(hours = 24)
+    async def cleanup(self):
+        async with aiosqlite.connect(config.database) as database:
+            await database.execute("DELETE FROM cooldowns WHERE expiry_time < ?", (time.time(),))
+            await database.commit()
 
     @app_commands.command(name = "setup_submission", description = "Create the song submission button")
     async def setup_submission(self, interaction: discord.Interaction):
