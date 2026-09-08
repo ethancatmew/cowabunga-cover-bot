@@ -66,8 +66,8 @@ class SongInformationModal(ui.Modal, title = "Song Information"):
                     description = "Songs from the 2000s or prior"
                 ),
                 discord.CheckboxGroupOption(
-                    label = "Rock",
-                    value = "Rock"
+                    label = "Musicals",
+                    value = "Musical"
                 ),
                 discord.CheckboxGroupOption(
                     label = "Country",
@@ -251,7 +251,7 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
             "```"
         )
 
-        expiration = time.time() + self.cooldown
+        expiration = time.time() + config.cooldown
         async with aiosqlite.connect(config.database) as database:
             await database.execute(
                 "INSERT OR REPLACE INTO cooldowns (user_id, expiry_time) VALUES (?, ?)",
@@ -259,7 +259,8 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
             )
             await database.commit()
 
-        await channel.send(content = f"{interaction.user.id}\n{lua_str}", view = SubmissionButtons(self.bot))
+        file = await attachment.to_file()
+        await channel.send(content = f"{interaction.user.id}\n{lua_str}", file = file, view = SubmissionButtons(self.bot))
         await self.continue_view.original_interaction.delete_original_response()
         await interaction.followup.send("Submission received!", ephemeral = True)
 

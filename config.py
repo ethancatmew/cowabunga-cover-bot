@@ -11,7 +11,7 @@ channels = {
 }
 
 database = "database.db"
-
+group_id = 35565681
 cooldown = 259200
 
 cover_rules = """

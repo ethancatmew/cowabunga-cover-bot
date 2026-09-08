@@ -5,8 +5,8 @@
 # SQL Database
 *.db
 
-# Songs JSON
-*.json
+# Songs
+audio_queue/
 
 # Python
 __pycache__/

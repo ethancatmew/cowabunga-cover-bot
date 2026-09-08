@@ -51,7 +51,7 @@ class FeedbackModal(ui.Modal, title = "Cover Declined Feedback"):
         
         await interaction.message.delete()
 
-class EditModal(ui.Modal, title="Edit Submission"):
+class EditModal(ui.Modal, title = "Edit Submission"):
     def __init__(self, bot: commands.Bot, source: str):
         super().__init__()
         self.bot = bot
@@ -212,7 +212,7 @@ class CoverSubmissionModal(ui.Modal, title = "Cover Submission"):
             file = await attachment.to_file()
             response = BASE_STRING.format(title = title, artist = artist, date = self.release_date.value, duration = duration, userid = self.roblox_userid.value, lyrics = lyrics)
             
-            expiration = time.time() + self.cooldown
+            expiration = time.time() + config.cooldown
             async with aiosqlite.connect(config.database) as database:
                 await database.execute(
                     "INSERT OR REPLACE INTO cooldowns (user_id, expiry_time) VALUES (?, ?)",
