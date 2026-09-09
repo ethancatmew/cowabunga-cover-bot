@@ -23,6 +23,7 @@ async def approve(bot: commands.Bot, interaction: discord.Interaction, title_art
     try:
         source = re.search(r"```lua\s*(.*?)```", content, re.DOTALL | re.IGNORECASE).group(1).strip()
         song_name = re.search(r'Title\s*=\s*"([^"]*)"', source).group(1)
+        user_id = int(re.search(r'CoverBy\s*=\s*(\d+)', source).group(1))
 
         attachment = interaction.message.attachments[0]
         extension = os.path.splitext(attachment.filename)[1].lower()
@@ -39,6 +40,7 @@ async def approve(bot: commands.Bot, interaction: discord.Interaction, title_art
         source = source.replace("SongId = 0", f"SongId = {audio_result.get('asset_id')}")
         luau = f"""local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AssetService = game:GetService("AssetService")
+local PendingItems = game:GetService("DataStoreService"):GetDataStore("PendingItems")
 
 local songs = ReplicatedStorage:FindFirstChild("Songs")
 
@@ -52,6 +54,16 @@ module.Source = [[{source}]]
 module.Parent = songs
 
 print("Created module:", module:GetFullName())
+
+local succ, e = pcall(function()
+    PendingItems:UpdateAsync({user_id}, function(old)
+        local queue = old or {{}}
+        table.insert(queue, {{Type = "ChatTag", Item = "Cover Artist"}})
+        table.insert(queue, {{Type = "Door", Item = "Cover Artist"}})
+        table.insert(queue, {{Type = "DoorEffect", Item = "Cover Artist"}})
+        return queue
+    end)
+end)
 
 local success, err = pcall(function()
     AssetService:SavePlaceAsync({{
