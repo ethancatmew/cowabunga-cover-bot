@@ -6,8 +6,8 @@ roles = {
 }
 
 channels = {
-    "submissions": 1544552102989402122,
-    "feedback_log": 1544552102989402122
+    "submissions": 1546791867625246761,
+    "feedback_log": 1357438360167252008
 }
 
 database = "database.db"

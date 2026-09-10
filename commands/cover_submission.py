@@ -281,6 +281,10 @@ class CoverSubmission(commands.Cog):
 
     @app_commands.command(name = "setup_submission", description = "Create the song submission button")
     async def setup_submission(self, interaction: discord.Interaction):
+        has_role = any(role.id in {config.roles["developer"], config.roles["dev_test"]} for role in interaction.user.roles)
+        if not has_role:
+            return await interaction.response.send_message(":no_entry_sign: You must be a part of the Cowabunga Team to use this command.", ephemeral = True)
+
         await interaction.response.send_message(
             config.cover_rules,
             view = StartSubmissionView(self.bot)

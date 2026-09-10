@@ -10,22 +10,6 @@ class CoverHelperCommands(commands.Cog):
         self.bot = bot
 
     @app_commands.command(
-        name = "post_cover_button",
-        description = "Post the cover submission text wall/button"
-    )
-    @app_commands.checks.has_any_role(config.roles["developer"], config.roles["dev_test"])
-    async def post_cover_button(self, interaction: discord.Interaction):
-        from commands.cover_submission import CoverSubmissionButton
-        await interaction.response.send_message("Posted cover button!", ephemeral=True)
-        await interaction.channel.send(content = config.cover_rules, view = CoverSubmissionButton(self.bot))
-
-    @post_cover_button.error
-    async def post_cover_button_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        if isinstance(error, app_commands.MissingAnyRole):
-            await interaction.response.send_message(":no_entry_sign: You must be a part of the Cowabunga Team to use this command.", ephemeral = True)
-
-
-    @app_commands.command(
         name = "post_covers_disabled",
         description = "Post the covers disabled message with an optional reason"
     )
