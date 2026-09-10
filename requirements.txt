@@ -1,8 +1,6 @@
 discord.py @ git+https://github.com/rapptz/discord.py
 aiosqlite
 aiohttp
-asyncio
 mutagen
 python-dotenv
 requests
-json
