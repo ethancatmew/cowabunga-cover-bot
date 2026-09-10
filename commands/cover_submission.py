@@ -61,7 +61,7 @@ class SongInformationModal(ui.Modal, title = "Song Information"):
                     value = "Pop",
                 ),
                 discord.CheckboxGroupOption(
-                    label = "Classic",
+                    label = "Classics",
                     value = "Classic",
                     description = "Songs from the 2000s or prior"
                 ),

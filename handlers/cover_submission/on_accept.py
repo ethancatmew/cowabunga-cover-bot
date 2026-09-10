@@ -44,16 +44,10 @@ local PendingItems = game:GetService("DataStoreService"):GetDataStore("PendingIt
 
 local songs = ReplicatedStorage:FindFirstChild("Songs")
 
-if not songs then
-    error("ReplicatedStorage.Songs does not exist")
-end
-
 local module = Instance.new("ModuleScript")
 module.Name = {song_name!r}
 module.Source = [[{source}]]
-module.Parent = songs
-
-print("Created module:", module:GetFullName())
+module.Parent = songs.RecentlyAccepted
 
 local succ, e = pcall(function()
     PendingItems:UpdateAsync({user_id}, function(old)
@@ -79,12 +73,14 @@ return {{
 }}"""
 
         result = await opencloud.run_luau(luau)
-        print(result)
         if result.get("error"):
             return await interaction.followup.send(f"Failed to create module: `{result['error']}`", ephemeral = True)
 
         await user.send(f"Your cover of **{title_artist}** has been accepted! You can find the song in-game shortly. If this is your first accepted cover, you can find some cover artist rewards in your inventory!")
     except discord.Forbidden:
         return await interaction.followup.send("Submitter has DMs disabled.", ephemeral = True)
-
+    finally:
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
+    
     await interaction.message.delete()
