@@ -9,3 +9,16 @@ Want to try it out for yourself? Join the Cowabunga Games [discord server](disco
 - discord.py
 - SQLite
 - ROBLOX OpenCloud API
+
+## Showcase:
+> Users are prompted to submit their song information as well as their audio file.
+<img width="900" height="711" alt="image" src="https://github.com/user-attachments/assets/792aa5a5-e1bb-4cdd-903b-03ff1dab1f34" />
+
+> The bot then auto formats the submission into script format and prompts reviewers to accept/edit/reject
+<img width="538" height="551" alt="image" src="https://github.com/user-attachments/assets/c5313c3e-5a8c-4967-916d-02574b22edda" />
+
+> On accept, the submitter gets DMed letting them know and OpenCloud API uploads the song, inserts the module into our game, and edits the users data in order to give them rewards.
+
+> On edit, the reviewer can tweak anything wrong with the submission such as capitalization, spelling, etc.
+
+> On reject, the submitter gets DMed letting them know and the reviewer can optionally give the submitter some feedback.
