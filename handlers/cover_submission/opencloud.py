@@ -2,12 +2,16 @@ import config
 import os
 import asyncio
 import aiohttp
+import ssl
 import json
 
 ROBLOX_API_KEY = os.getenv("ROBLOX_OPENCLOUD")
 
 UNIVERSE_ID = "9381876880"
 PLACE_ID = "137899023865628"
+
+ssl_context = ssl.create_default_context()
+aiohttp.TCPConnector.__init__.__kwdefaults__["ssl"] = ssl_context
 
 async def run_luau(script: str):
     BASE_URL = "https://apis.roblox.com/cloud/v2"
