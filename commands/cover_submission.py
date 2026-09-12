@@ -79,7 +79,7 @@ class SongInformationModal(ui.Modal, title = "Song Information"):
 
     async def on_submit(self, interaction: discord.Interaction):
         if not self.release_year.value.isnumeric():
-            return await interaction.followup.send("**ERROR**:warning: Must submit a number for your release year.", ephemeral = True)
+            return await interaction.response.send_message("**ERROR**:warning: Must submit a number for your release year.", ephemeral = True)
 
         song_data = {
             "title": self.song_title.value,
@@ -180,7 +180,7 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
 
         channel = self.bot.get_channel(config.channels["submissions"])
         if not channel:
-            await interaction.followup.send(f'**ERROR**:warning: Submission failed. Please try again. If this keeps happening, create a bug report ticket.', ephemeral = True)
+            return await interaction.followup.send(f'**ERROR**:warning: Submission failed. Please try again. If this keeps happening, create a bug report ticket.', ephemeral = True)
 
         attachment: discord.Attachment = self.audio.component.values[0]
 
