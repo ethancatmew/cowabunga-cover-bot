@@ -157,6 +157,7 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
 
     roblox_userid = ui.TextInput(
         label = "Roblox UserId",
+        placeholder = "33339260",
         required = True,
         style = discord.TextStyle.short
     )
@@ -168,7 +169,7 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
     )
 
     audio = ui.Label(
-        text = "Cover Audio",
+        text = "Cover Audio (mp3 or wav)",
         component = ui.FileUpload(
             min_values = 1,
             max_values = 1
@@ -245,7 +246,7 @@ class AudioSubmissionModal(ui.Modal, title = "Audio Submission"):
             f'\tCoverBy = {data["userid"]},\n'
             f'\tLyrics = {{\n{data["lyrics"]}\t}},\n'
             f'\tSongId = 0,\n'
-            f'\tVolume = 0.5,\n'
+            f'\tVolume = 2,\n'
             f'\tTimePosition = 0,\n'
             "}\n"
             "```"
