@@ -35,10 +35,6 @@ async def on_ready():
     await bot.change_presence(status=discord.Status.online, activity=discord.Game(name="Join our group!"))
     print(f'{bot.user} is now online, synced {len(synced)} commands.')
 
-    for guild in bot.guilds:
-        if guild.id not in config.servers:
-            print(f"Leaving guild: {guild.name} ({guild.id})")
-
 @bot.event
 async def on_guild_join(guild: discord.Guild):
     if guild.id not in config.servers:
