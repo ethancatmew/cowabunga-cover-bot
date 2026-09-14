@@ -10,6 +10,12 @@ channels = {
     "feedback_log": 1357438360167252008
 }
 
+servers = [
+    1353545280829657129, # Main server
+    1438925560582770780, # Dev testing
+    1482661688082956291, # Private testing
+]
+
 database = "database.db"
 group_id = 35565681
 cooldown = 259200
