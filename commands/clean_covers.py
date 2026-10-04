@@ -13,6 +13,9 @@ class CleanCovers(commands.Cog):
         if not has_role:
             return await interaction.response.send_message(":no_entry_sign: You must be a part of the Cowabunga Team to use this command.", ephemeral = True)
 
+        if interaction.channel_id != config.channels["submissions"]:
+            return await interaction.response.send_message(":no_entry_sign: You must use this command inside of the submissions channel", ephemeral = True)
+
         await interaction.response.defer(ephemeral = True, thinking = True)
 
         guild = interaction.guild
