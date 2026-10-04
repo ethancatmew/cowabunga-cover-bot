@@ -8,8 +8,11 @@ class CleanCovers(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name = "clean_covers", description = "Removes all the covers sent in by users who left the server")
-    @app_commands.checks.has_any_role(config.roles["developer"], config.roles["dev_test"])
     async def clean(self, interaction: discord.Interaction):
+        has_role = any(role.id in {config.roles["developer"], config.roles["dev_test"]} for role in interaction.user.roles)
+        if not has_role:
+            return await interaction.response.send_message(":no_entry_sign: You must be a part of the Cowabunga Team to use this command.", ephemeral = True)
+
         await interaction.response.defer(ephemeral = True, thinking = True)
 
         guild = interaction.guild
